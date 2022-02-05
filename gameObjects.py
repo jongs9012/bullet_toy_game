@@ -7,12 +7,9 @@ player_y = 200
 width = 20
 height = 20
 time_ = 0
-moveSpeed = 5
+moveSpeed = 8
 score = 0
-objects = []
-onGame = True
-done = False
-
+player_life = 3
 
 # 화면 크기 설정
 size = (1280, 720)  # 1280 * 720
@@ -27,6 +24,9 @@ playerImg = pygame.image.load("images/niddle.PNG").convert()
 playerImg = pygame.transform.scale(playerImg, (30, 30))
 player = screen.blit(playerImg, (player_x, player_y))
 
+# Life 이미지
+lifeImg = pygame.image.load("images/heart.png").convert()
+lifeImg = pygame.transform.scale(lifeImg, (30, 30))
 
 class Bullits:
     def __init__(self, x, y):
@@ -55,27 +55,47 @@ class Bullits:
         if self.pos_x + self.x_speed > 1280 - width or self.pos_x + self.x_speed < 0:
             self.x_speed = -self.x_speed
             self.crashed += 1
-        if self.pos_y + self.y_speed > 720 - width or self.pos_y + self.y_speed < 0:
+        if self.pos_y + self.y_speed > 720 - height or self.pos_y + self.y_speed < 0:
             self.y_speed = -self.y_speed
             self.crashed += 1
+
     def collision_check(self):
         if self.bubble.top < player.bottom and player.top < self.bubble.bottom and player.left < self.bubble.right and self.bubble.left < player.right:
             return True
         else:
             return False
 
-    def check_all(self):
-        self.draw()
-        self.move()
-        self.wall_check()
+    def remove_check(self):
+        Curr_difficulty = diff(score)[1]
+        print(Curr_difficulty)
+        if self.crashed >= {Curr_difficulty == "Easy": 5, Curr_difficulty == "Normal": 4}.get(True, 3):
+            return True
+        elif self.crashed < {Curr_difficulty == "Easy": 5, Curr_difficulty == "Normal": 4}.get(True, 3):
+            return False
 
-        if self.collision_check():
-            while True:
+    def check_all(self):
+        self.move()
+        self.draw()
+        self.wall_check()
+        if self.collision_check() and int(edit_life(0)) == 0:
+            print("end")
+            while True:  # 게임 오버
                 pass
 
-        if self.crashed >= 5:
+class Life:
+    def __init__(self, pos_x, pos_y, level):
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        self.level = level
+
+    def draw(self):
+        self.life = screen.blit(lifeImg, (self.pos_x, self.pos_y))
+
+    # 부딛히면 True, 아닐시 False를 반환
+    def collision_detection(self):
+        if self.life.top < player.bottom and player.top < self.life.bottom and player.left < self.life.right and self.life.left < player.right:
             return True
-        elif self.crashed < 5:
+        else:
             return False
 
 
@@ -90,26 +110,33 @@ def diff(score):
         return difficulty["hard"], "Hard"
 
 
+
 # 움직임 구현 함수 (방향키)
 def move(li):
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT] and li[0] > 0:
         li[0] -= moveSpeed
 
-    if keys[pygame.K_RIGHT] and li[0] < 1280 - height :
+    if keys[pygame.K_RIGHT] and li[0] < 1280 - width :
         li[0] += moveSpeed
 
     if keys[pygame.K_UP] and li[1] > 0:
         li[1] -= moveSpeed
 
-    if keys[pygame.K_DOWN] and li[1] < 720 - width:
+    if keys[pygame.K_DOWN] and li[1] < 720 - height:
         li[1] += moveSpeed
     return li[0], li[1]  # li[0]은 x좌표, li[1]은 y좌표
 
 # 플레이어 함수
 def print_player(x, y):
+    global player
     currLocation = [x, y]
     player_x, player_y = move(currLocation)
     screen.blit(playerImg, (player_x, player_y))
-    print(x ,y, player_x, player_y)
+    player = screen.blit(playerImg, (player_x, player_y))
     return player_x, player_y
+
+def edit_life(level):
+    global player_life
+    player_life += level
+    return player_life
